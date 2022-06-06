@@ -51,7 +51,7 @@ socket_aux_t* socket_init_and_listen(int port, int* error) {
         *error = ERR_SOCKET_LISTEN;
         return NULL;
     }
-
+    printf("listening on port %d\n", port);
     return socket_aux;
 }
 
@@ -65,7 +65,7 @@ void socket_receive(socket_aux_t* socket_aux, char client_msg[MSG_SIZE], int* er
 } 
 
 void socket_send(socket_aux_t* socket_aux, char msg[MSG_SIZE], int* error) {
-    if (send(socket_aux->socket_desc, msg, strlen(msg), 0) < 0){
+    if (send(socket_aux->socket_desc, msg, MSG_SIZE, 0) < 0){
         *error = ERR_SOCKET_SEND;
     }
     return;
