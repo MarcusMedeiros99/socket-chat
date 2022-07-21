@@ -6,12 +6,17 @@
 #include <string.h>
 #include <malloc.h>
 
+#define TRUE 1
+#define FALSE 0
+
 #define DEFAULT_PORT 2000
 
 #define MSG_SIZE 4096
 
 #define SERVER_SOCKET 1
 #define CLIENT_SOCKET 2
+
+#define MAX_CLIENTS 10
 
 #define ERR_SOCKET_CREATION 1
 #define ERR_SOCKET_BIND 2
@@ -28,7 +33,7 @@ typedef struct _socket_aux_t {
 
 socket_aux_t* socket_init_and_connect(int port, int* error);
 socket_aux_t* socket_init_and_listen(int port, int* error);
-void socket_receive(socket_aux_t* socket_aux, char client_msg[MSG_SIZE], int* error);
+size_t socket_receive(socket_aux_t* socket_aux, char client_msg[MSG_SIZE], int* error);
 void socket_send(socket_aux_t* socket_aux, char msg[MSG_SIZE], int* error);
 void socket_close(socket_aux_t* socket_aux);
 void socket_accept(socket_aux_t* socket_aux, socket_aux_t* socket_client, int* error);

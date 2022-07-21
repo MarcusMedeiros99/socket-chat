@@ -57,11 +57,13 @@ socket_aux_t* socket_init_and_listen(int port, int* error) {
 
 
 
-void socket_receive(socket_aux_t* socket_aux, char client_msg[MSG_SIZE], int* error) {
-
-    if (recv(socket_aux->socket_desc, client_msg, MSG_SIZE, 0) < 0){
+size_t socket_receive(socket_aux_t* socket_aux, char client_msg[MSG_SIZE], int* error) {
+    size_t n_bytes;
+    n_bytes = recv(socket_aux->socket_desc, client_msg, MSG_SIZE, 0);
+    if (n_bytes < 0){
         *error = ERR_SOCKET_RECV;
     }
+    return n_bytes;
 } 
 
 void socket_send(socket_aux_t* socket_aux, char msg[MSG_SIZE], int* error) {
