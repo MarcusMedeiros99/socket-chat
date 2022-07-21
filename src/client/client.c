@@ -14,7 +14,7 @@ sem_t mutex;
 int port;
 pthread_t print_msg_thread;
 
-void print_msg(void* arg) {
+void* print_msg(void* arg) {
     while (!connection_closed) {
         socket_receive(socket_client, server_msg, &error);
         if (!connection_closed) printf("Server's response: %s\n", server_msg);
@@ -31,6 +31,8 @@ void print_help() {
     printf("connect to server, default port is 2000\n\n");
     printf("\\ping\n");
     printf("test connection. receive pong message\n\n");
+    printf("\\whoami\n");
+    printf("get nickname from server\n\n");
 }
 
 void connect_to_server() {

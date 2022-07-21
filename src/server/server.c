@@ -49,16 +49,23 @@ void* read_socket(void* arg) {
         printf("RECEIVED (from client %d): %.10s\n", thread_arg.id, client_msg);
         
         sem_wait(&msg_mutex);
-        strcpy(server_msg, client_msg);
-        if (strcmp(client_msg, "\\ping == 0")) strcpy(server_msg, "pong");
+        int whoami = strcmp(client_msg, "\\whoami") == 0;
+        int ping = strcmp(client_msg, "\\ping") == 0;
+        if(whoami) sprintf(server_msg, "%d", thread_arg.id);
+        else sprintf(server_msg, "client %d:%s", thread_arg.id, client_msg);
+        if (ping) strcpy(server_msg, "pong");
 
-
-        for (int i = 0; i < MAX_CLIENTS; i++) {
-            if (is_thread_used[i]) {
-                socket_send(socket_client +i, apelido, &error);
-                socket_send(socket_client + i, server_msg, &error);
-                printf("sending message to client %d\n", i);
+        if (!whoami && !ping) {
+            for (int i = 0; i < MAX_CLIENTS; i++) {
+                if (is_thread_used[i]) {
+                    socket_send(socket_client + i, server_msg, &error);
+                    printf("sending message to client %d\n", i);
+                }
             }
+        }
+        else {
+            socket_send(socket_client + thread_arg.id, server_msg, &error);
+            printf("sending message to client %d\n", thread_arg.id);
         }
         sem_post(&msg_mutex);
         sem_post(thread_mutex + thread_arg.id);
