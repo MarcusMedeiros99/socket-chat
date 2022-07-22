@@ -3,6 +3,8 @@
 #include <semaphore.h>
 #include <pthread.h>
 #include "../aux/socket_aux.h"
+#include "../aux/channel.h"
+#include "../aux/channel_table.h"
 
 #define DEFAULT_PORT 2000
 
@@ -16,6 +18,7 @@ int is_thread_used[MAX_CLIENTS];
 char server_msg[MSG_SIZE];
 socket_aux_t* socket_server;
 socket_aux_t socket_client[MAX_CLIENTS];
+str_table_t* ch_table;
 
 typedef struct thread_arg_t_ {
     int id;
@@ -26,8 +29,9 @@ void* read_socket(void* arg) {
     char client_msg[MSG_SIZE];
     int error;
     char apelido[MSG_SIZE];
-
-    sprintf(apelido,"client %d",thread_arg.id);
+    int has_apelido = FALSE;
+    channel_t* channel = NULL;
+    
 
     printf("begin thread %d\n", thread_arg.id);
 
@@ -35,33 +39,75 @@ void* read_socket(void* arg) {
         sem_wait(thread_mutex + thread_arg.id);
         socket_receive(socket_client + thread_arg.id, client_msg, &error);
 
-        if (strcmp(client_msg, "\\quit") == 0) {
+        if (strcmp(client_msg, "/quit") == 0) {
             sem_wait(&n_clients_mutex);
             printf("Exiting...\n");
             is_thread_used[thread_arg.id] = FALSE;
             printf("freeing thread %d\n", thread_arg.id);
             n_clients--;
             socket_close(socket_client + thread_arg.id);
+            
+            if (channel != NULL) {
+                remove_node(channel, thread_arg.id);
+            }
+
             sem_post(&n_clients_mutex);
             sem_post(thread_mutex + thread_arg.id);
             break;
         }
-        printf("RECEIVED (from client %d): %.10s\n", thread_arg.id, client_msg);
+        printf("RECEIVED (from client %d): %s\n", thread_arg.id, client_msg);
         
         sem_wait(&msg_mutex);
-        int whoami = strcmp(client_msg, "\\whoami") == 0;
-        int ping = strcmp(client_msg, "\\ping") == 0;
-        if(whoami) sprintf(server_msg, "%d", thread_arg.id);
-        else sprintf(server_msg, "client %d:%s", thread_arg.id, client_msg);
-        if (ping) strcpy(server_msg, "pong");
+        int whoami = strcmp(client_msg, "/whoami") == 0;
+        int ping = strcmp(client_msg, "/ping") == 0;
+        int nickname = strncmp(client_msg, "/nickname", 9) == 0;
+        int join = strncmp(client_msg, "/join", 5) == 0;
 
-        if (!whoami && !ping) {
-            for (int i = 0; i < MAX_CLIENTS; i++) {
-                if (is_thread_used[i]) {
-                    socket_send(socket_client + i, server_msg, &error);
-                    printf("sending message to client %d\n", i);
+        if(whoami && !has_apelido) sprintf(server_msg, "%d", thread_arg.id);
+        else if (whoami && has_apelido) sprintf(server_msg, "%s", apelido);
+        else if (has_apelido) sprintf(server_msg, "%s:%s", apelido, client_msg);
+        else if (nickname) {
+            sprintf(server_msg, "setting nickname\n");
+        }
+        else if (!nickname) sprintf(server_msg, "must have nickname\n");
+        
+        if (ping) strcpy(server_msg, "pong");
+        if (nickname) {
+            strcpy(apelido, &client_msg[10]);
+            has_apelido = TRUE;
+        }
+
+        if (join) {
+            char channel_name[CH_NAME_SIZE];
+            strncpy(channel_name, &client_msg[6], CH_NAME_SIZE);
+
+            channel = insert_name(ch_table, channel_name, CH_NAME_SIZE);
+            printf("getting channel %s\n", channel->name);
+            node_t* node = init_node(thread_arg.id);
+            insert_node(channel, node);
+
+            sprintf(server_msg, "joining channel %s", channel_name);
+        }
+
+        if (!whoami && !ping && !nickname && has_apelido && !join) {
+            // for (int i = 0; i < MAX_CLIENTS; i++) {
+            //     if (is_thread_used[i]) {
+            //         socket_send(socket_client + i, server_msg, &error);
+            //         printf("sending message to client %d\n", i);
+            //     }
+            // }
+            if (channel != NULL) {
+                node_t* node = channel->first;
+                printf("sending message to channel %s\n", channel->name);
+                while (node != NULL) {
+                    printf("sending message to client %d\n", node->thread_id);
+                    if (is_thread_used[node->thread_id]) {
+                        socket_send(socket_client + node->thread_id, server_msg, &error);
+                    }
+                    node = node->next;
                 }
             }
+            
         }
         else {
             socket_send(socket_client + thread_arg.id, server_msg, &error);
@@ -116,6 +162,8 @@ int get_unused_thread_index() {
     return -1;
 }
 
+
+
 int main(int argc, char const *argv[])
 {
     int port = DEFAULT_PORT;
@@ -131,6 +179,7 @@ int main(int argc, char const *argv[])
     init_mutex();
 
     socket_server = socket_init_and_listen(port, &error);
+    ch_table = init_table();
 
     if (error) {
         printf("Server wasn't able to start and listen, exiting...");

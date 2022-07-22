@@ -25,13 +25,13 @@ void* print_msg(void* arg) {
 
 void print_help() {
     printf("commands:\n");
-    printf("\n\\help\n");
+    printf("\n//help\n");
     printf("show this menu\n\n");
-    printf("\\connect\n");
+    printf("//connect\n");
     printf("connect to server, default port is 2000\n\n");
-    printf("\\ping\n");
+    printf("//ping\n");
     printf("test connection. receive pong message\n\n");
-    printf("\\whoami\n");
+    printf("//whoami\n");
     printf("get nickname from server\n\n");
 }
 
@@ -76,7 +76,7 @@ int main(int argc, char const *argv[])
         if (read_success && client_msg[msg_len - 1] == '\n') client_msg[msg_len - 1] = '\0';
         
 
-        if (!read_success || strcmp(client_msg, "\\quit") == 0) {
+        if (!read_success || strcmp(client_msg, "/quit") == 0) {
             if (!connection_closed) socket_send(socket_client, client_msg, &error);
             sem_wait(&mutex);
             connection_closed = TRUE;
@@ -84,20 +84,15 @@ int main(int argc, char const *argv[])
             printf("Exiting...\n");
             return 0;
         }
-        else if (strcmp(client_msg, "\\help") == 0) {
+        else if (strcmp(client_msg, "/help") == 0) {
             print_help();
             continue;
         }
-        else if (strcmp(client_msg, "\\connect") == 0) {
+        else if (strcmp(client_msg, "/connect") == 0) {
             connect_to_server();
             continue;
         }
-        else if (strcmp(client_msg, "\\ping") == 0) {
-            if (connection_closed) {
-                printf("YOU MUST CONNECT FIRST!!\n");
-                continue;
-            }
-        }
+    
 
         if (connection_closed) {
             printf("YOU MUST CONNECT FIRST!!\n");
