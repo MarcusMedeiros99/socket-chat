@@ -25,14 +25,16 @@ void* print_msg(void* arg) {
 
 void print_help() {
     printf("commands:\n");
-    printf("\n//help\n");
+    printf("\n/help\n");
     printf("show this menu\n\n");
-    printf("//connect\n");
+    printf("/connect\n");
     printf("connect to server, default port is 2000\n\n");
-    printf("//ping\n");
+    printf("/ping\n");
     printf("test connection. receive pong message\n\n");
-    printf("//whoami\n");
+    printf("/whoami\n");
     printf("get nickname from server\n\n");
+    printf("/join <channel>\n");
+    printf("join channel and create if not exists\n\n");
 }
 
 void connect_to_server() {
