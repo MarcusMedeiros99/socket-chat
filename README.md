@@ -1,6 +1,9 @@
 # socket_chat
 Disponível no repositório: https://github.com/MarcusMedeiros99/socket-chat
+
 Apresentação em https://youtu.be/-P39SlYxJ4A
+
+A branch da última entrega é a mod3
 
 Uma aplicação que simula uma troca de mensagens usando sockets TCP.
 
